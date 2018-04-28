@@ -9,133 +9,36 @@
 				border: 1px black solid;
 			}
 		</style>
+		<script src="ball.js"></script>
+		<script src="block.js"></script>
+		<script src="paddle.js"></script>
+		<script src="guagame.js"></script>
 	</head>
 
 	<body>
 		<canvas id="id-canvas" width="400" height="300"></canvas>
 		<script>
-			var log = console.log.bind(console)
 			
+			var log = console.log.bind(console)
 			var imageFromPath=function(path){
 				var img =new Image()
 				img.src=path
 				return img
 			}
-			var CheckBorder=function(x,y){
-				if(x>=0 && x<=400 && y>=0 && y<=300){
-					return true
-				}
-				return false
-			}
-			var Paddle = function(){
-				var image=imageFromPath('pd.png')
-				var o={
-					image:image,
-					x:100,
-					y:200,
-					speed:5,
-				}
-				o.moveLeft=function(){
-					o.x-=o.speed
-				}
-				o.moveRight=function(){
-					o.x+=o.speed
-				}
-				return o
-			}
-			
-			var GuaGame=function(){
-				var g={
-					actions:{},
-					keydowns:{},
-				}
-				var canvas = document.querySelector('#id-canvas')
-				var context = canvas.getContext('2d')
-				g.canvas=canvas
-				g.context=context
-				
-				//draw
-				g.drawImage=function(guaImage){
-					g.context.drawImage(guaImage.image,guaImage.x,guaImage.y)
-				}
-				
-				//events
-				window.addEventListener('keydown',function(event){
-					g.keydowns[event.key]=true
-				})
-				window.addEventListener('keyup',function(event){
-					g.keydowns[event.key]=false
-				})
-				
-				
-				g.registerAction=function(key,callback){
-					g.actions[key]=callback
-				}
-				
-				setInterval(function(){
-					//events
-					var actions=Object.keys(g.actions)
-					for (var i=0;i<actions.length;i++) {
-						var key=actions[i]
-						if(g.keydowns[key]){
-							g.actions[key]()
-						}
-					}
-					//update
-					g.update()
-					context.clearRect(0,0,canvas.width,canvas.height)
-					g.draw()
-				},1000/30)
-				return g
-			}
-			
-			var Ball=function(){
-				var image=imageFromPath('ball.png')
-				var b={
-					image:image,
-					x:150,
-					y:250,
-					Xspeed:5,
-					Yspeed:5,
-					Shoot:false,
-				}
-				b.shoot=function(){
-					b.Shoot=true
-				}
-				b.move=function(){
-					if(b.Shoot==false)
-						return
-					
-						
-					if(b.x+b.Xspeed>400 || b.x+b.Xspeed<0){
-						b.Xspeed=-b.Xspeed
-					}
-					if(b.y+b.Yspeed>300 || b.y +b.Yspeed<0){
-						b.Yspeed=-b.Yspeed
-					}
-					b.x+=b.Xspeed
-					b.y+=b.Yspeed
-				}
-				b.collide=function(obj){
-					if(b.x>obj.x && b.x<obj.x+obj.image.width && b.y>obj.y && b.y<obj.y+obj.image.height){
-						return true
-					}
-					return false
-				}
-				b.back=function(){
-					b.Yspeed*=-1
-				}
-				return b
-			}
-			
 			var __main = function() {
-
 				var paddle=Paddle()
-				
+				var PAUSE=false
 				var game=GuaGame()
-
 				var ball=Ball()
-
+				var blocks=[]
+				
+				for(var i=0;i<3;i++){
+					var b= Block(100+i*50,100)
+					blocks.push(b)
+				}
+				
+				
+				
 				var x = 100
 				var y = 200
 				var speed = 5
@@ -149,16 +52,37 @@
 				game.registerAction('t',function(){
 					ball.shoot()
 				})
-				
+				game.registerAction('p',function(){
+					PAUSE=true
+				})
+				game.registerAction('[',function(){
+					PAUSE=false
+				})
 				game.update=function(){
+					if(PAUSE){
+						return
+					}
 					if(ball.collide(paddle)){
 						ball.back()
+					}
+					for(var i=0;i<blocks.length;i++){
+						var b=blocks[i]
+						if(b.alive && ball.collide(b)){
+							b.alive=false
+							ball.back()
+						}
 					}
 					ball.move()
 				}
 				game.draw=function(){
 					game.drawImage(paddle)
 					game.drawImage(ball)
+					for(var i=0;i<blocks.length;i++){
+						var b=blocks[i]
+						if(b.alive){
+							game.drawImage(b)
+						}
+					}
 				}
 			
 			}
